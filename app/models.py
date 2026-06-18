@@ -1,7 +1,9 @@
 """SQLAlchemy ORM models for surveys, polls, and users."""
 
 from sqlalchemy import (
+    Boolean,
     Column,
+    DateTime,
     Integer,
     String,
     ForeignKey,
@@ -31,12 +33,14 @@ class User(Base):
 
 
 class Survey(Base):
-    """Survey model with questions."""
+    """Survey model with questions and scheduled access window."""
     __tablename__ = "surveys"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    start_datetime = Column(DateTime, nullable=False)
+    end_datetime = Column(DateTime, nullable=False)
 
     questions = relationship(
         "Question",
@@ -46,6 +50,11 @@ class Survey(Base):
     responses = relationship(
         "SurveySubmission",
         back_populates="survey"
+    )
+    sessions = relationship(
+        "SurveySession",
+        back_populates="survey",
+        cascade="all, delete-orphan"
     )
 
 
@@ -102,17 +111,50 @@ class SurveySubmission(Base):
         Integer,
         ForeignKey("surveys.id", ondelete="CASCADE")
     )
+    session_id = Column(
+        Integer,
+        ForeignKey("survey_sessions.id")
+    )
     submitted_by = Column(String(100), nullable=False)
 
     survey = relationship(
         "Survey",
         back_populates="responses"
     )
+    session = relationship(
+        "SurveySession",
+        back_populates="submissions"
+    )
 
     answers = relationship(
         "Answer",
         back_populates="response",
         cascade="all, delete-orphan"
+    )
+
+
+class SurveySession(Base):
+    """User survey session valid for a limited duration after start."""
+    __tablename__ = "survey_sessions"
+
+    id = Column(Integer, primary_key=True)
+    survey_id = Column(
+        Integer,
+        ForeignKey("surveys.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    started_by = Column(String(100), nullable=False)
+    started_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    completed = Column(Boolean, default=False, nullable=False)
+
+    survey = relationship(
+        "Survey",
+        back_populates="sessions"
+    )
+    submissions = relationship(
+        "SurveySubmission",
+        back_populates="session"
     )
 
 
@@ -143,12 +185,14 @@ class Answer(Base):
 
 
 class Poll(Base):
-    """Poll model with options."""
+    """Poll model with options and scheduled access window."""
     __tablename__ = "polls"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    start_datetime = Column(DateTime, nullable=False)
+    end_datetime = Column(DateTime, nullable=False)
 
     options = relationship(
         "PollOption",

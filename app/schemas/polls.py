@@ -1,6 +1,7 @@
 """Poll-related Pydantic schemas."""
 
-from typing import List
+from datetime import datetime
+from typing import List, Optional
 from pydantic import BaseModel
 
 
@@ -14,6 +15,17 @@ class PollCreate(BaseModel):
     title: str
     description: str | None = None
     options: List[PollOptionCreate]
+    start_datetime: datetime
+    end_datetime: datetime
+
+
+class PollUpdate(BaseModel):
+    """Poll update model."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    options: Optional[List[PollOptionCreate]] = None
+    start_datetime: Optional[datetime] = None
+    end_datetime: Optional[datetime] = None
 
 
 class PollVoteCreate(BaseModel):
@@ -36,6 +48,8 @@ class PollResponse(BaseModel):
     title: str
     description: str | None
     options: List[PollOptionResponse]
+    start_datetime: datetime
+    end_datetime: datetime
 
     class Config:
         from_attributes = True

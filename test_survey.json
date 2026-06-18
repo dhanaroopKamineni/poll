@@ -1,0 +1,22 @@
+{
+  "title": "feedback",
+  "description": "provide feedback",
+  "questions": [
+    {
+      "question_text": "How is the service?",
+      "question_type": "mcq",
+      "options": [
+        {"option_text": "very satisfied"},
+        {"option_text": "satisfied"},
+        {"option_text": "good"},
+        {"option_text": "disappointed"}
+      ]
+    },
+    {
+      "question_text": "additional comments",
+      "question_type": "text"
+    }
+  ],
+  "start_datetime": "2026-06-18T00:00:00",
+  "end_datetime": "2026-06-18T23:59:59"
+}

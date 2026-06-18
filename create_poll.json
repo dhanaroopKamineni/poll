@@ -1,0 +1,11 @@
+{
+  "title": "Best Web Framework",
+  "description": "What's your favorite web framework?",
+  "options": [
+    {"option_text": "FastAPI"},
+    {"option_text": "Django"},
+    {"option_text": "Flask"}
+  ],
+  "start_datetime": "2026-06-18T00:00:00",
+  "end_datetime": "2026-06-18T23:59:59"
+}

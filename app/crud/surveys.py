@@ -1,8 +1,9 @@
 """Survey CRUD operations."""
 
+from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
-from ..models import Survey, Question, Option, SurveySubmission, Answer
+from ..models import Survey, Question, Option, SurveySubmission, Answer, SurveySession
 from ..schemas.surveys import SurveyCreate, SurveySubmissionCreate
 
 
@@ -10,7 +11,9 @@ def create_survey(db: Session, survey_data: SurveyCreate):
     """Create a new survey with questions and options."""
     survey = Survey(
         title=survey_data.title,
-        description=survey_data.description
+        description=survey_data.description,
+        start_datetime=survey_data.start_datetime,
+        end_datetime=survey_data.end_datetime,
     )
 
     db.add(survey)
@@ -50,9 +53,27 @@ def get_survey(db: Session, survey_id: int):
     )
 
 
-def get_surveys(db: Session):
-    """Get all surveys."""
-    return db.query(Survey).all()
+def get_active_surveys(db: Session, now: datetime | None = None):
+    """Get all surveys currently available to users."""
+    now = now or datetime.utcnow()
+    return (
+        db.query(Survey)
+        .filter(Survey.start_datetime <= now)
+        .filter(Survey.end_datetime >= now)
+        .all()
+    )
+
+
+def get_survey_if_active(db: Session, survey_id: int, now: datetime | None = None):
+    """Get a survey only if it is currently active."""
+    now = now or datetime.utcnow()
+    return (
+        db.query(Survey)
+        .filter(Survey.id == survey_id)
+        .filter(Survey.start_datetime <= now)
+        .filter(Survey.end_datetime >= now)
+        .first()
+    )
 
 
 def update_survey(db: Session, survey_id: int, payload):
@@ -67,6 +88,12 @@ def update_survey(db: Session, survey_id: int, payload):
 
     if payload.description is not None:
         survey.description = payload.description
+
+    if payload.start_datetime is not None:
+        survey.start_datetime = payload.start_datetime
+
+    if payload.end_datetime is not None:
+        survey.end_datetime = payload.end_datetime
 
     db.commit()
     db.refresh(survey)
@@ -91,6 +118,7 @@ def submit_survey(db: Session, payload: SurveySubmissionCreate, submitted_by: st
     """Submit a survey response by an authenticated user."""
     response = SurveySubmission(
         survey_id=payload.survey_id,
+        session_id=payload.session_id,
         submitted_by=submitted_by
     )
 
@@ -106,6 +134,10 @@ def submit_survey(db: Session, payload: SurveySubmissionCreate, submitted_by: st
         )
         db.add(answer)
 
+    session = db.query(SurveySession).filter(SurveySession.id == payload.session_id).first()
+    if session:
+        session.completed = True
+
     db.commit()
     db.refresh(response)
 
@@ -115,3 +147,39 @@ def submit_survey(db: Session, payload: SurveySubmissionCreate, submitted_by: st
 def get_survey_submissions(db: Session):
     """Get all survey submissions."""
     return db.query(SurveySubmission).all()
+
+
+def start_survey_session(db: Session, survey_id: int, started_by: str):
+    """Start a survey session and return the session object."""
+    now = datetime.utcnow()
+    expires = now + timedelta(minutes=10)
+    session = SurveySession(
+        survey_id=survey_id,
+        started_by=started_by,
+        started_at=now,
+        expires_at=expires,
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+def get_survey_session(db: Session, session_id: int):
+    """Return a survey session by ID."""
+    return db.query(SurveySession).filter(SurveySession.id == session_id).first()
+
+
+def validate_survey_session(db: Session, session_id: int, started_by: str):
+    """Validate a survey session's time window and ownership."""
+    now = datetime.utcnow()
+    session = get_survey_session(db, session_id)
+    if not session:
+        return None
+    if session.started_by != started_by:
+        return None
+    if session.completed:
+        return None
+    if session.expires_at < now:
+        return None
+    return session

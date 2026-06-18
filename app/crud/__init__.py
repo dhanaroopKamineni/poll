@@ -4,7 +4,6 @@ from .users import get_user_by_username, create_user
 from .surveys import (
     create_survey,
     get_survey,
-    get_surveys,
     update_survey,
     delete_survey,
     submit_survey,
@@ -13,7 +12,6 @@ from .surveys import (
 from .polls import (
     create_poll,
     get_poll,
-    get_polls,
     update_poll,
     delete_poll,
     vote_poll,

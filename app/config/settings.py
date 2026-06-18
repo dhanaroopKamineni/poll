@@ -11,7 +11,7 @@ class Settings:
     APP_NAME: str = "Poll API"
     APP_DESCRIPTION: str = "A survey and polling system with JWT authentication and role-based access control"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     
     # Server
     HOST: str = os.getenv("HOST", "0.0.0.0")

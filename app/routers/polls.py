@@ -8,13 +8,15 @@ from ..database import get_db
 from ..crud.polls import (
     create_poll,
     get_poll,
-    get_polls,
+    get_active_poll,
+    get_active_polls,
     update_poll,
     delete_poll,
     vote_poll,
 )
 from ..schemas.polls import (
     PollCreate,
+    PollUpdate,
     PollResponse,
     PollVoteCreate,
 )
@@ -37,8 +39,8 @@ def list_polls(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
-    """Get all polls."""
-    return get_polls(db)
+    """Get active polls currently available to the authenticated user."""
+    return get_active_polls(db)
 
 
 @router.get("/{poll_id}", response_model=PollResponse)
@@ -47,17 +49,17 @@ def get_poll_api(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_active_user)
 ):
-    """Get a poll by ID."""
-    poll = get_poll(db, poll_id)
+    """Get an active poll by ID."""
+    poll = get_active_poll(db, poll_id)
     if not poll:
-        raise HTTPException(status_code=404, detail="Poll not found")
+        raise HTTPException(status_code=404, detail="Poll not found or not active")
     return poll
 
 
 @router.put("/{poll_id}", response_model=PollResponse)
 def update_poll_api(
     poll_id: int,
-    payload: PollCreate,
+    payload: PollUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_admin)
 ):
@@ -92,5 +94,7 @@ def vote_poll_api(
     
     The voter is automatically recorded as the authenticated user.
     """
-    vote_poll(db, poll_id, payload, current_user.username)
+    vote = vote_poll(db, poll_id, payload, current_user.username)
+    if not vote:
+        raise HTTPException(status_code=400, detail="Poll not found or not active")
     return {"message": "Vote recorded"}

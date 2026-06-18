@@ -1,5 +1,6 @@
 """Survey and question-related Pydantic schemas."""
 
+from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 from enum import Enum
@@ -64,18 +65,24 @@ class SurveyBase(BaseModel):
 class SurveyCreate(SurveyBase):
     """Survey creation model."""
     questions: Optional[List[QuestionCreate]] = []
+    start_datetime: datetime
+    end_datetime: datetime
 
 
 class SurveyUpdate(BaseModel):
     """Survey update model."""
     title: Optional[str] = None
     description: Optional[str] = None
+    start_datetime: Optional[datetime] = None
+    end_datetime: Optional[datetime] = None
 
 
 class SurveyResponse(SurveyBase):
     """Survey response model."""
     id: int
     questions: List[QuestionResponse] = []
+    start_datetime: datetime
+    end_datetime: datetime
 
     class Config:
         from_attributes = True
@@ -88,9 +95,15 @@ class AnswerCreate(BaseModel):
     answer_text: Optional[str] = None
 
 
+class SurveySessionStartRequest(BaseModel):
+    """Request to start a survey session."""
+    survey_id: int
+
+
 class SurveySubmissionCreate(BaseModel):
     """Survey submission creation model."""
     survey_id: int
+    session_id: int
     answers: List[AnswerCreate]
 
 
@@ -105,10 +118,24 @@ class AnswerResponse(BaseModel):
         from_attributes = True
 
 
+class SurveySessionResponse(BaseModel):
+    """Survey session response model."""
+    id: int
+    survey_id: int
+    started_by: str
+    started_at: datetime
+    expires_at: datetime
+    completed: bool
+
+    class Config:
+        from_attributes = True
+
+
 class SurveySubmissionResponse(BaseModel):
     """Survey submission response model."""
     id: int
     survey_id: int
+    session_id: int
     submitted_by: str
     answers: List[AnswerResponse]
 
